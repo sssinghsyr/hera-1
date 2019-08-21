@@ -47,7 +47,7 @@ import com.paypal.hera.jdbc.mysql.StringUtils;
 /**
  * EscapeProcessor performs all escape code processing as outlined in the JDBC spec by JavaSoft.
  */
-class EscapeProcessor {
+public class EscapeProcessor {
     private static Map<String, String> JDBC_CONVERT_TO_MYSQL_TYPE_MAP;
     
     public final static byte USES_VARIABLES_FALSE = 0;
@@ -98,8 +98,7 @@ class EscapeProcessor {
      * @throws SQLException
      *             if error occurs
      */
-    public static final Object escapeSQL(String sql, TimeZone defaultTimeZone, boolean serverSupportsFractionalSecond,
-    		boolean serverTruncatesFractionalSecond) throws java.sql.SQLException {
+    public static final Object escapeSQL(String sql) throws java.sql.SQLException {
         boolean replaceEscapeSequence = false;
         String escapeSequence = null;
 
@@ -140,8 +139,7 @@ class EscapeProcessor {
                         if (nestedBrace != -1) {
                             StringBuilder buf = new StringBuilder(token.substring(0, 1));
 
-                            Object remainingResults = escapeSQL(token.substring(1, token.length() - 1), defaultTimeZone, serverSupportsFractionalSecond,
-                                    serverTruncatesFractionalSecond);
+                            Object remainingResults = escapeSQL(token.substring(1, token.length() - 1));
 
                             String remaining = null;
 
@@ -221,10 +219,6 @@ class EscapeProcessor {
                             	throw new HeraSQLException("Not supported");
                             }
                         }
-                    } else if (StringUtils.startsWithIgnoreCase(collapsedToken, "{ts")) {
-                        processTimestampToken(defaultTimeZone, newSql, token, serverSupportsFractionalSecond, serverTruncatesFractionalSecond);
-                    } else if (StringUtils.startsWithIgnoreCase(collapsedToken, "{t")) {
-                        processTimeToken(newSql, token, serverSupportsFractionalSecond);
                     } else if (StringUtils.startsWithIgnoreCase(collapsedToken, "{call") || StringUtils.startsWithIgnoreCase(collapsedToken, "{?=call")) {
 
                         int startPos = StringUtils.indexOfIgnoreCase(token, "CALL") + 5;
@@ -299,74 +293,6 @@ class EscapeProcessor {
         return epr;
     }
 
-    private static void processTimeToken(StringBuilder newSql, String token, boolean serverSupportsFractionalSecond)
-            throws SQLException {
-        int startPos = token.indexOf('\'') + 1;
-        int endPos = token.lastIndexOf('\''); // no }
-
-        if ((startPos == -1) || (endPos == -1)) {
-            newSql.append(token); // it's just part of the query, push possible syntax errors onto server's shoulders
-        } else {
-
-            String argument = token.substring(startPos, endPos);
-
-            try {
-                StringTokenizer st = new StringTokenizer(argument, " :.");
-                String hour = st.nextToken();
-                String minute = st.nextToken();
-                String second = st.nextToken();
-
-                String fractionalSecond = "";
-
-                if (serverSupportsFractionalSecond && st.hasMoreTokens()) {
-                    fractionalSecond = "." + st.nextToken();
-                }
-
-                newSql.append("'");
-                newSql.append(hour);
-                newSql.append(":");
-                newSql.append(minute);
-                newSql.append(":");
-                newSql.append(second);
-                if (serverSupportsFractionalSecond) {
-                    newSql.append(fractionalSecond);
-                }
-                newSql.append("'");
-            } catch (java.util.NoSuchElementException e) {
-            	throw new HeraSQLException("Not supported");
-            }
-        }
-    }
-
-    private static void processTimestampToken(TimeZone tz, StringBuilder newSql, String token, boolean serverSupportsFractionalSecond,
-            boolean serverTruncatesFractionalSecond) throws SQLException {
-        int startPos = token.indexOf('\'') + 1;
-        int endPos = token.lastIndexOf('\''); // no }
-
-        if ((startPos == -1) || (endPos == -1)) {
-            newSql.append(token); // it's just part of the query, push possible syntax errors onto server's shoulders
-        } else {
-
-            String argument = token.substring(startPos, endPos);
-
-            try {
-                Timestamp ts = Timestamp.valueOf(argument);
-                ts = TimeUtil.adjustTimestampNanosPrecision(ts, 6, !serverTruncatesFractionalSecond);
-                SimpleDateFormat tsdf = TimeUtil.getSimpleDateFormat(null, "''yyyy-MM-dd HH:mm:ss", null, tz);
-
-                newSql.append(tsdf.format(ts));
-
-                if (serverSupportsFractionalSecond && ts.getNanos() > 0) {
-                    newSql.append('.');
-                    newSql.append(TimeUtil.formatNanos(ts.getNanos(), 6));
-                }
-
-                newSql.append('\'');
-            } catch (IllegalArgumentException illegalArgumentException) {
-            	throw new HeraSQLException("Not supported");
-            }
-        }
-    }
 
     /**
      * Re-writes {fn convert (expr, type)} as cast(expr AS type)

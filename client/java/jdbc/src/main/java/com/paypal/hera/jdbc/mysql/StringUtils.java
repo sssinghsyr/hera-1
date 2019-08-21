@@ -48,7 +48,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.paypal.hera.jdbc.mysql.Messages;
-import com.mysql.cj.ServerVersion;
 import com.paypal.hera.ex.HeraSQLException;
 
 
@@ -283,7 +282,7 @@ public class StringUtils {
         try {
             return s.getBytes(encoding);
         } catch (UnsupportedEncodingException uee) {
-            throw ExceptionFactory.createException(WrongArgumentException.class, Messages.getString("StringUtils.0", new Object[] { encoding }), uee);
+        	throw new AssertionError("UTF-8 not supported");
         }
 
     }
@@ -1695,7 +1694,7 @@ public class StringUtils {
         try {
             return new String(value, offset, length, encoding);
         } catch (UnsupportedEncodingException uee) {
-        	throw new HeraSQLException("Not supported");
+        	throw new AssertionError("UTF-8 not supported");
         }
     }
 
@@ -1706,7 +1705,7 @@ public class StringUtils {
         try {
             return new String(value, encoding);
         } catch (UnsupportedEncodingException uee) {
-        	throw new HeraSQLException("Not supported");
+        	throw new AssertionError("UTF-8 not supported");
         }
     }
 
@@ -1768,7 +1767,7 @@ public class StringUtils {
                 cs = Charset.forName(encoding);
             }
         } catch (UnsupportedCharsetException ex) {
-        	throw new HeraSQLException("Not supported");
+        	throw new AssertionError("UTF-8 not supported");
         }
         ByteBuffer buf = cs.encode(CharBuffer.wrap(value, offset, length));
 
@@ -1796,7 +1795,7 @@ public class StringUtils {
         try {
             return value.substring(offset, offset + length).getBytes(encoding);
         } catch (UnsupportedEncodingException uee) {
-        	throw new HeraSQLException("Not supported");
+        	throw new AssertionError("UTF-8 not supported");
         }
     }
 
@@ -1847,7 +1846,7 @@ public class StringUtils {
         return asBytes;
     }
 
-    public static boolean canHandleAsServerPreparedStatementNoCache(String sql, ServerVersion serverVersion, boolean allowMultiQueries,
+    public static boolean canHandleAsServerPreparedStatementNoCache(String sql, boolean allowMultiQueries,
             boolean noBackslashEscapes, boolean useAnsiQuotes) {
 
         // Can't use server-side prepare for CALL
@@ -1873,7 +1872,7 @@ public class StringUtils {
             canHandleAsStatement = false;
         } else if (startsWithIgnoreCaseAndWs(sql, "SET")) {
             canHandleAsStatement = false;
-        } else if (StringUtils.startsWithIgnoreCaseAndWs(sql, "SHOW WARNINGS") && serverVersion.meetsMinimum(ServerVersion.parseVersion("5.7.2"))) {
+        } else if (StringUtils.startsWithIgnoreCaseAndWs(sql, "SHOW WARNINGS") ) {
             canHandleAsStatement = false;
         } else if (sql.startsWith("/* ping */")) {
             canHandleAsStatement = false;
