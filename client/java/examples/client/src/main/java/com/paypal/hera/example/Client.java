@@ -1,5 +1,6 @@
 package com.paypal.hera.example;
 
+import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -21,5 +22,9 @@ public class Client {
 		if (rs.next()) {
 			System.out.println("Result: " + rs.getString(1));
 		}
+		String query = "{ call DALCERT_INSERT_EMPLOYEE() }";
+		CallableStatement cst = dbConn.prepareCall(query);
+		cst.executeUpdate();
+		dbConn.commit();
 	}
 }

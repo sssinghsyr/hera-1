@@ -33,10 +33,10 @@ package com.paypal.hera.jdbc.mysql;
  * Wraps output from EscapeProcessor, to help prevent multiple passes over the query string, to detect characters such as '@' (defining/using a variable),
  * which are used further up the call stack to handle failover.
  */
-class EscapeProcessorResult {
+public class EscapeProcessorResult {
     boolean callingStoredFunction = false;
 
-    String escapedSql;
+    public String escapedSql;
 
     byte usesVariables = 0;
 }

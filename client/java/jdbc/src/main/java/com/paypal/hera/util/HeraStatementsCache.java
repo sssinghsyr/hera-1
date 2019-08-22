@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import com.paypal.hera.cal.CalTransaction;
 import com.paypal.hera.cal.CalTransactionFactory;
 import com.paypal.hera.jdbc.mysql.EscapeProcessor;
+import com.paypal.hera.jdbc.mysql.EscapeProcessorResult;
 
 public class HeraStatementsCache {
 	public enum StatementType {
@@ -165,12 +166,14 @@ public class HeraStatementsCache {
 			Matcher m = escapePattern.matcher(_sql);
 			Boolean mySql = true;
 			Boolean oracle = false;
-			if (m.find() && oracle) {
+			Boolean match = m.find();
+			if (match && oracle) {
 				_sql = "BEGIN " +  m.group(1) + "; END;" ;
 				LOGGER.debug("Found call escape, SQL is: " + _sql);
-			} else if (m.find() && mySql){
+			} else if (match && mySql){
 				try {
-					_sql = (String) EscapeProcessor.escapeSQL(_sql);
+					Object escapedSqlResult = EscapeProcessor.escapeSQL(_sql);
+					_sql = escapedSqlResult instanceof String ? (String) escapedSqlResult : ((EscapeProcessorResult) escapedSqlResult).escapedSql;
 				} catch (SQLException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
